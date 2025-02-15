@@ -1,6 +1,7 @@
 import localFont from "next/font/local";
 import Navbar from "@/components/navbar";
 import Hero from "@/components/Hero";
+import Highlights from "@/components/Highlights";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -18,6 +19,7 @@ export default function Home() {
     <main>
       <Navbar />
       <Hero />
+      <Highlights />
     </main>
   );
 }
