@@ -1,220 +1,254 @@
-// 'use client';
-
+import { useRef, useEffect, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/swiper-bundle.css";
 import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import ScrollTrigger from "gsap/ScrollTrigger";
+import ScrollTrigger from "gsap/ScrollTrigger"; // Import ScrollTrigger
+import Image from "next/image";
+import { highlightsSlides } from "../constants";
+import { pauseImg, playImg, replayImg } from "@/utils/assets";
+
+// Register ScrollTrigger plugin with GSAP
 gsap.registerPlugin(ScrollTrigger);
 
-import { useEffect, useRef, useState } from "react";
-
-import { hightlightsSlides } from "../constants";
-import { pauseImg, playImg, replayImg } from "@/utils/assets";
-import Image from "next/image";
-
 const VideoCarousel = () => {
-
   const videoRef = useRef([]);
-  const videoSpanRef = useRef([]);
   const videoDivRef = useRef([]);
-
-  // video and indicator
-  const [video, setVideo] = useState({
-    isEnd: false,
-    startPlay: false,
-    videoId: 0,
-    isLastVideo: false,
-    isPlaying: false,
-  });
-//
-  const [loadedData, setLoadedData] = useState([]);
-  const { isEnd, isLastVideo, startPlay, videoId, isPlaying } = video;
-
-  useGSAP(() => {
-    // slider animation to move the video out of the screen and bring the next video in
-    gsap.to("#slider", {
-      transform: `translateX(${-100 * videoId}%)`,
-      duration: 2,
-      ease: "power2.inOut",
-      onComplete: () => {
-        setVideo((prev) => ({
-          ...prev,
-          startPlay: true,
-          isPlaying: true,
-        }));
-      },
-    });
-
-    // video animation to play the video when it is in the view
-    gsap.to("#video", {
-      scrollTrigger: {
-        trigger: "#video",
-        toggleActions: "restart none none none",
-      },
-      onComplete: () => {
-        setVideo((pre) => ({
-          ...pre,
-          startPlay: true,
-          isPlaying: true,
-        }));
-      },
-    });
-  }, [isEnd, videoId]);
+  const videoSpanRef = useRef([]);
+  const swiperRef = useRef(null);
+  const containerRef = useRef(null);
+  const progressAnimationRef = useRef(null);
+  const scrollTriggerRef = useRef(null); // Ref to store ScrollTrigger instance
+  const [isPlaying, setIsPlaying] = useState(false); // Start as not playing
+  const [isLastVideo, setIsLastVideo] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
-    let currentProgress = 0;
-    let span = videoSpanRef.current;
+    // Set up ScrollTrigger to detect when the component is in view
+    scrollTriggerRef.current = ScrollTrigger.create({
+      trigger: containerRef.current,
+      start: "top 80%", // Start when the top of the container is 80% from the top of the viewport
+      end: "bottom 20%", // End when the bottom of the container is 20% from the top of the viewport
+      onEnter: () => handleVisibilityChange(true),
+      onLeave: () => handleVisibilityChange(false),
+      onEnterBack: () => handleVisibilityChange(true),
+      onLeaveBack: () => handleVisibilityChange(false),
+    });
 
-    if (span[videoId]) {
-      // animation to move the indicator
-      let anim = gsap.to(span[videoId], {
-        onUpdate: () => {
-          // get the progress of the video
-          const progress = Math.ceil(anim.progress() * 100);
-
-          if (progress != currentProgress) {
-            currentProgress = progress;
-
-            // set the width of the progress bar
-            gsap.to(videoDivRef.current[videoId], {
-              width:
-                window.innerWidth < 760
-                  ? "10vw" // mobile
-                  : window.innerWidth < 1200
-                  ? "10vw" // tablet
-                  : "4vw", // laptop
-            });
-
-            // set the background color of the progress bar
-            gsap.to(span[videoId], {
-              width: `${currentProgress}%`,
-              backgroundColor: "white",
-            });
-          }
-        },
-
-        // when the video is ended, replace the progress bar with the indicator and change the background color
-        onComplete: () => {
-          if (isPlaying) {
-            gsap.to(videoDivRef.current[videoId], {
-              width: "12px",
-            });
-            gsap.to(span[videoId], {
-              backgroundColor: "#afafaf",
-            });
-          }
-        },
-      });
-
-      if (videoId == 0) {
-        anim.restart();
+    // Clean up ScrollTrigger on component unmount
+    return () => {
+      if (scrollTriggerRef.current) {
+        scrollTriggerRef.current.kill();
       }
-
-      // update the progress bar
-      const animUpdate = () => {
-        anim.progress(
-          videoRef.current[videoId].currentTime / hightlightsSlides[videoId].videoDuration
-        );
-      };
-
-      if (isPlaying) {
-        // ticker to update the progress bar
-        gsap.ticker.add(animUpdate);
-      } else {
-        // remove the ticker when the video is paused (progress bar is stopped)
-        gsap.ticker.remove(animUpdate);
+      
+      // Kill progress animation if it exists
+      if (progressAnimationRef.current) {
+        progressAnimationRef.current.kill();
       }
-    }
-  }, [videoId, startPlay]);
+    };
+  }, []);
 
-  useEffect(() => {
-    if (loadedData.length > 3) {
-      if (!isPlaying) {
-        videoRef.current[videoId].pause();
-      } else {
-        startPlay && videoRef.current[videoId].play();
+  // Handle visibility changes (when scrolling in/out of view)
+  const handleVisibilityChange = (isVisible) => {
+    const currentIndex = swiperRef.current?.activeIndex || 0;
+    
+    if (isVisible && !hasInitialized) {
+      // First time becoming visible - initialize everything
+      if (videoRef.current[currentIndex]) {
+        videoRef.current[currentIndex].play();
+        setIsPlaying(true);
+        initializeProgressBar(currentIndex);
+        animateProgress(currentIndex);
+        setHasInitialized(true);
       }
-    }
-  }, [startPlay, videoId, isPlaying, loadedData]);
-
-  // vd id is the id for every video until id becomes number 3
-  const handleProcess = (type, i) => {
-    switch (type) {
-      case "video-end":
-        setVideo((pre) => ({ ...pre, isEnd: true, videoId: i + 1 }));
-        break;
-
-      case "video-last":
-        setVideo((pre) => ({ ...pre, isLastVideo: true }));
-        break;
-
-      case "video-reset":
-        setVideo((pre) => ({ ...pre, videoId: 0, isLastVideo: false }));
-        break;
-
-      case "pause":
-        setVideo((pre) => ({ ...pre, isPlaying: !pre.isPlaying }));
-        break;
-
-      case "play":
-        setVideo((pre) => ({ ...pre, isPlaying: !pre.isPlaying }));
-        break;
-
-      default:
-        return video;
+    } else if (isVisible && !isPlaying && hasInitialized) {
+      // Coming back into view after being initialized
+      if (videoRef.current[currentIndex]) {
+        videoRef.current[currentIndex].play();
+        setIsPlaying(true);
+        if (progressAnimationRef.current) {
+          progressAnimationRef.current.play();
+        } else {
+          animateProgress(currentIndex);
+        }
+      }
+    } else if (!isVisible && isPlaying) {
+      // Going out of view while playing
+      if (videoRef.current[currentIndex]) {
+        videoRef.current[currentIndex].pause();
+        if (progressAnimationRef.current) {
+          progressAnimationRef.current.pause();
+        }
+        setIsPlaying(false);
+      }
     }
   };
 
-  const handleLoadedMetaData = (i, e) => setLoadedData((pre) => [...pre, e]);
+  // Initialize a progress bar to white color before animation starts
+  const initializeProgressBar = (index) => {
+    // Reset all progress bars to their default state first
+    highlightsSlides.forEach((_, i) => {
+      gsap.set(videoDivRef.current[i], { width: '12px' }); // Reset width of all progress bars
+      gsap.set(videoSpanRef.current[i], { 
+        width: '0%',
+        backgroundColor: 'transparent' // Reset color and progress
+      });
+    });
+
+    // Expand the active progress bar container
+    gsap.to(videoDivRef.current[index], {
+      width: '4vw',
+      duration: 0.3,
+      ease: 'power2.inOut',
+    });
+
+    // Set the active progress span to white immediately
+    gsap.set(videoSpanRef.current[index], {
+      backgroundColor: '#ffffff'
+    });
+  };
+
+  const handleSlideChange = (swiper) => {
+    const previousIndex = swiper.previousIndex;
+    const currentIndex = swiper.activeIndex;
+
+    // Kill previous animation if exists
+    if (progressAnimationRef.current) {
+      progressAnimationRef.current.kill();
+    }
+
+    if (videoRef.current[previousIndex]) {
+      videoRef.current[previousIndex].pause();
+      videoRef.current[previousIndex].currentTime = 0;
+    }
+
+    if (videoRef.current[currentIndex]) {
+      // Initialize the progress bar for the new slide
+      initializeProgressBar(currentIndex);
+      
+      // Only play if the component is in view (ScrollTrigger is active)
+      if (scrollTriggerRef.current && scrollTriggerRef.current.isActive) {
+        videoRef.current[currentIndex].play();
+        animateProgress(currentIndex);
+        setIsPlaying(true);
+      } else {
+        setIsPlaying(false);
+      }
+    }
+
+    setIsLastVideo(currentIndex === highlightsSlides.length - 1);
+  };
+
+  const handleVideoEnd = () => {
+    if (swiperRef.current) {
+      const currentIndex = swiperRef.current.activeIndex;
+      if (currentIndex < highlightsSlides.length - 1) {
+        swiperRef.current.slideNext();
+      }
+    }
+  };
+
+  const handleProcess = (action) => {
+    const currentIndex = swiperRef.current.activeIndex;
+    
+    switch (action) {
+      case "play":
+        videoRef.current[currentIndex].play();
+        setIsPlaying(true);
+        // Resume the progress animation
+        if (progressAnimationRef.current) {
+          progressAnimationRef.current.play();
+        } else {
+          animateProgress(currentIndex);
+        }
+        break;
+      case "pause":
+        videoRef.current[currentIndex].pause();
+        setIsPlaying(false);
+        // Pause the progress animation
+        if (progressAnimationRef.current) {
+          progressAnimationRef.current.pause();
+        }
+        break;
+      case "video-reset":
+        // Kill previous animation if exists
+        if (progressAnimationRef.current) {
+          progressAnimationRef.current.kill();
+        }
+        swiperRef.current.slideTo(0);
+        setIsPlaying(true);
+        break;
+    }
+  };
+
+  const animateProgress = (index) => {
+    if(isPlaying) {
+      // Kill previous animation if exists
+      if (progressAnimationRef.current) {
+        progressAnimationRef.current.kill();
+      }
+      
+      // Start from 0% width but keep the white color
+      gsap.set(videoSpanRef.current[index], { 
+        width: '0%',
+        backgroundColor: '#ffffff' // Keep it white from the start
+      });
+      
+      // Store the animation instance - only animate the width, not the color
+      progressAnimationRef.current = gsap.to(videoSpanRef.current[index], {
+        width: '100%', // Animate to 100%
+        duration: highlightsSlides[index].videoDuration,
+        ease: 'linear',
+      });
+    }
+  };
 
   return (
-    <>
-      <div className="flex items-center">
-        {hightlightsSlides.map((list, i) => (
-          <div key={list.id} id="slider" className="sm:pr-20 pr-10">
+    <div ref={containerRef}>
+      <Swiper
+        onSwiper={(swiper) => (swiperRef.current = swiper)}
+        onSlideChange={handleSlideChange}
+        allowTouchMove={false}
+        speed={1500}
+        loop={true}
+      >
+        {highlightsSlides.map((slide, index) => (
+          <SwiperSlide key={slide.id}>
             <div className="video-carousel_container">
               <div className="size-full flex-center rounded-3xl overflow-hidden bg-black">
                 <video
-                  id="video"
-                  
-                  muted={true}
-                  className={`${
-                    list.id === 2 && "translate-x-44"
-                  } pointer-events-none`}
-                  // preload="auto"
-                  ref={(el) => (videoRef.current[i] = el)}
-                  onEnded={() =>
-                    i !== 3
-                      ? handleProcess("video-end", i)
-                      : handleProcess("video-last")
-                  }
-                  onPlay={() =>
-                    setVideo((pre) => ({ ...pre, isPlaying: true }))
-                  }
-                  onLoadedMetadata={(e) => handleLoadedMetaData(i, e)}
+                  ref={(el) => (videoRef.current[index] = el)}
+                  onEnded={handleVideoEnd}
+                  muted
                 >
-                  <source src={list.video} type="video/mp4" />
+                  <source src={slide.video} type="video/mp4" />
                 </video>
               </div>
 
               <div className="absolute top-12 left-[5%] z-10">
-                {list.textLists.map((text, i) => (
+                {slide.textLists.map((text, i) => (
                   <p key={i} className="md:text-2xl text-xl font-medium">
                     {text}
                   </p>
                 ))}
               </div>
             </div>
-          </div>
+          </SwiperSlide>
         ))}
-      </div>
+      </Swiper>
 
+      {/* Progress Bar */}
       <div className="relative flex-center mt-10">
         <div className="flex-center py-5 px-7 bg-black backdrop-blur rounded-full">
-          {videoRef.current.map((_, i) => (
+          {highlightsSlides.map((_, i) => (
             <span
               key={i}
               className="mx-2 w-3 h-3 bg-gray-500 rounded-full relative cursor-pointer"
               ref={(el) => (videoDivRef.current[i] = el)}
+              onClick={() => {
+                if (swiperRef.current) {
+                  swiperRef.current.slideTo(i);
+                }
+              }}
             >
               <span
                 className="absolute h-full w-full rounded-full"
@@ -225,20 +259,22 @@ const VideoCarousel = () => {
         </div>
 
         <button className="control-btn">
-          <Image height={24} width={24}
+          <Image
+            height={24}
+            width={24}
             src={isLastVideo ? replayImg : !isPlaying ? playImg : pauseImg}
             alt={isLastVideo ? "replay" : !isPlaying ? "play" : "pause"}
-            onClick={
+            onClick={() =>
               isLastVideo
-                ? () => handleProcess("video-reset")
+                ? handleProcess("video-reset")
                 : !isPlaying
-                ? () => handleProcess("play")
-                : () => handleProcess("pause")
+                ? handleProcess("play")
+                : handleProcess("pause")
             }
           />
         </button>
       </div>
-    </>
+    </div>
   );
 };
 

@@ -6,6 +6,7 @@ import Model from "@/components/Model";
 import Features from "@/components/Features";
 import HowitWorks from "@/components/howitWork";
 import Footer from "@/components/Footer";
+import VideoC from "@/components/VideoCarousel";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
