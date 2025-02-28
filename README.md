@@ -1,6 +1,6 @@
 # iPhone Website - Built with Next.js & GSAP 🚀
 
-Welcome to the **iPhone Website** repository! This project is a sleek, modern, and interactive website showcasing the latest iPhone models. Built with **Next.js** for server-side rendering and performance optimization, and powered by **GSAP (GreenSock Animation Platform)** for stunning animations, this website is designed to captivate users and deliver a seamless browsing experience.
+Welcome to my **iPhone Website** repository! This project is a sleek, modern, and interactive website showcasing the iPhone model. Built with **Next.js** and powered by **GSAP (GreenSock Animation Platform)** for stunning animations, this website is designed to captivate users and deliver a seamless browsing experience.
 
 Whether you're a developer, designer, or just curious about the tech stack, this project is a great example of how to combine cutting-edge tools to create a visually appealing and high-performance website.
 
@@ -18,13 +18,23 @@ Whether you're a developer, designer, or just curious about the tech stack, this
 
 ## 🛠️ Tech Stack
 
-- **Next.js**: For server-side rendering, static site generation, and routing.
+- **Next.js**: For frontend development and static site generation.
+- **Tailwind CSS**: For designing, responsive styling.
 - **GSAP (GreenSock)**: For creating smooth, high-performance animations.
-- **Tailwind CSS**: For utility-first, responsive styling.
-- **Vercel**: For seamless deployment and hosting.
+- **Swiper**: Modern library for slides.
+- **Vercel**: For deployment.
 
 ---
 
+## 📸 Screenshots
+
+### Hero Section
+![](https://github.com/AliAtherAyyubi/3d-iphone-website/blob/master/Screenshots/Screenshot%202025-02-27%20162834.png)
+### Highlight Section
+![](https://github.com/AliAtherAyyubi/3d-iphone-website/blob/master/Screenshots/Screenshot%202025-02-27%20162843.png)
+![Animations](screenshots/animations.gif)
+
+---
 ## � Installation
 
 To run this project locally, follow these steps:
@@ -57,21 +67,7 @@ To run this project locally, follow these steps:
 
 ---
 
-## 🎨 Customization
 
-- **Update Content**: Replace the placeholder text and images in the `components` and `pages` folders.
-- **Modify Animations**: Tweak GSAP animations in the `animations` folder to suit your needs.
-- **Change Styling**: Edit the `globals.css` file or use Tailwind CSS classes for custom styles.
-
----
-
-## 📸 Screenshots
-
-![Homepage](screenshots/homepage.png)
-![Product Page](screenshots/product.png)
-![Animations](screenshots/animations.gif)
-
----
 
 ## 🤝 Contributing
 
