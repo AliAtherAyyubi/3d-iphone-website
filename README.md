@@ -26,13 +26,10 @@ Whether you're a developer, designer, or just curious about the tech stack, this
 
 ---
 
-## 📸 Screenshots
+## 📸 Screenshot
 
-### Hero Section
-![](https://github.com/AliAtherAyyubi/3d-iphone-website/blob/master/Screenshots/Screenshot%202025-02-27%20162834.png)
-### Highlight Section
-![](https://github.com/AliAtherAyyubi/3d-iphone-website/blob/master/Screenshots/Screenshot%202025-02-27%20162843.png)
-![Animations](screenshots/animations.gif)
+
+![](https://github.com/AliAtherAyyubi/3d-iphone-website/blob/master/Screenshots/webPage.png)
 
 ---
 ## � Installation
